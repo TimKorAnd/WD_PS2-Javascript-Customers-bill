@@ -38,14 +38,18 @@ const GOODS = [
 ];
 const SORT_ARROW_UP = '▲';
 const SORT_ARROW_DOWN = '▼';
+let tableBody = document.getElementById('tbody');
+let total = document.getElementById('total');
+
+
 function searchByName(event) {
     let searchRegExp;
 
     try {
-        searchRegExp = new RegExp(event.target.value,'g');
+        searchRegExp = new RegExp(event.target.value,'gi');
     } catch {
         /*escape spec. symbols*/
-        searchRegExp = new RegExp(document.getElementById(inputRegexpId).value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),'g')
+        searchRegExp = new RegExp(event.target.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),'gi')
     }
 
     GOODS.forEach((currGood, i) =>{
@@ -59,37 +63,46 @@ function searchByName(event) {
 
 }
 
-function filterSelect(event) {
+function filterByCategorySelect(event) {
     let filter = event.target.value;
     GOODS.forEach((currGood, i) =>{
-        if (currGood.category === filter) {
-            GOODS[i].filtered = true;
-        } else {
-            GOODS[i].filtered = false;
-        }
-    })
+        GOODS[i].filteredByCategory = (currGood.category === filter || filter === '')
+    });
     viewTable();
 }
-
+/*draw row with one good*/
 function drawTR(currGood) {
-
-
+    //console.log(currGood);
+    let tr = document.createElement('tr');
+    for (let currField in currGood) {
+        if (currField === 'searched' || currField === 'filteredByCategory') continue;
+        let td = tr.appendChild(document.createElement('td'));
+        td.innerHTML = currGood[currField];
+    }
+    tableBody.appendChild(tr);
 }
-
+/*show the table*/
 function viewTable(){
-    let clearTable = () => {
-        console.log('clearTable');
-    };
-    clearTable();
-    GOODS.forEach((currGood) =>{
-        if (currGood.viewOk) {
-            drawTR(currGood);
+    let sum = 0;
+    let clearTableBody = () => {
+        while(tableBody.hasChildNodes())
+        {
+            tableBody.removeChild(tableBody.firstChild);
         }
-    })
+        total.innerText = '$';
+    };
+    //console.log(GOODS);
+    clearTableBody();
+    GOODS.forEach((currGood) =>{
+        if ((currGood.searched === undefined || currGood.searched) && (currGood.filteredByCategory === undefined || currGood.filteredByCategory)) {
+            drawTR(currGood);
+            sum += (currGood.price * currGood.amount);
+        }
+    });
+    total.innerText = sum+'$';
 }
 
 function sortBy(event) {
-    console.log(GOODS);
     let field = event.target.innerText.toLowerCase().split(' ');
     event.target.innerText = event.target.innerText.replace((field[1] === SORT_ARROW_UP ? SORT_ARROW_UP : SORT_ARROW_DOWN),
             (field[1] !== SORT_ARROW_UP ? SORT_ARROW_UP : SORT_ARROW_DOWN));
@@ -103,8 +116,6 @@ function sortBy(event) {
         return field[1] === SORT_ARROW_UP ? 1 : -1;
     });
 
-
-    console.log(GOODS);
     viewTable();
 
 }
@@ -114,11 +125,13 @@ function eventsLoader() {
     searchInputElem.addEventListener('input',(event) => searchByName(event));
 
     const  filterSelectElem = document.getElementById('filter-by-category');
-    filterSelectElem.addEventListener('change',(event) => filterSelect(event))
+    filterSelectElem.addEventListener('change',(event) => filterByCategorySelect(event))
 
     const categorySortElem = document.getElementById('category-arrow-sort');
     categorySortElem.addEventListener('click',(event) => sortBy(event));
 
     const nameSortElem = document.getElementById('name-arrow-sort');
     nameSortElem.addEventListener('click',(event) => sortBy(event));
+
+    viewTable();
 }
